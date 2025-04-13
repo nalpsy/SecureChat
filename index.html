@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureChat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background: #121212;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: linear-gradient(145deg, #1a1a1a, #222222);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(255, 77, 77, 0.1);
+        }
+
+        .header {
+            background: #ff4d4d;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header img {
+            width: 40px;
+            height: 40px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .auth-container, .chat-container, .profile-container, .admin-container {
+            padding: 32px;
+        }
+
+        .auth-container, .profile-container, .admin-container {
+            display: none;
+        }
+
+        .auth-container.active, .chat-container.active, .profile-container.active, .admin-container.active {
+            display: block;
+        }
+
+        h2 {
+            color: #ff4d4d;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 16px;
+            margin: 12px 0;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #2a2a2a;
+            color: #e0e0e0;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #ff4d4d;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 12px 0;
+            border: none;
+            border-radius: 8px;
+            background: #ff4d4d;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.1s;
+        }
+
+        button:hover {
+            background: #e63939;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .chat-container {
+            display: none;
+            flex-direction: column;
+            height: 700px;
+        }
+
+        .chat-container.active {
+            display: flex;
+        }
+
+        .tab-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 10px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .tab-button.active {
+            background: #ff4d4d;
+        }
+
+        #chatMessages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            background: #1a1a1a;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .message {
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            background: #2a2a2a;
+            max-width: 80%;
+            word-break: break-word;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.admin {
+            background: linear-gradient(145deg, #4a0000, #660000);
+            color: #ff9999;
+        }
+
+        .message img, .message video {
+            max-width: 250px;
+            max-height: 250px;
+            border-radius: 12px;
+            margin-top: 12px;
+            display: block;
+        }
+
+        .message-header {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        #messageInput {
+            flex: 1;
+            min-height: 48px;
+            resize: none;
+        }
+
+        #mediaInput {
+            display: none;
+        }
+
+        .media-button {
+            width: 48px;
+            height: 48px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .error {
+            color: #ff6666;
+            text-align: center;
+            margin-bottom: 16px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .button-group button {
+            flex: 1;
+        }
+
+        .profile-container .color-options {
+            display: flex;
+            gap: 12px;
+            margin: 12px 0;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: border-color 0.3s;
+        }
+
+        .color-option.selected {
+            border-color: #fff;
+        }
+
+        .admin-container .user-list {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 16px;
+            background: #1a1a1a;
+            border-radius: 12px;
+            margin-bottom: 24px;
+        }
+
+        .admin-container .user-item {
+            padding: 12px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #ff4d4d;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40' fill='%23fff'%3E%3Cpath d='M20 5C12.15 5 5 12.15 5 20s7.15 15 15 15 15-7.15 15-15S27.85 5 20 5zm0 27c-6.63 0-12-5.37-12-12s5.37-12 12-12 12 5.37 12 12-5.37 12-12 12zm-2-18h4v4h4v4h-4v4h-4v-4h-4v-4h4v-4z'/%3E%3C/svg%3E" alt="SecureChat Logo">
+            <h1>SecureChat</h1>
+        </div>
+
+        <!-- Login Section -->
+        <div class="auth-container login active">
+            <h2>Login</h2>
+            <p class="error" id="loginError"></p>
+            <input type="text" id="loginUsername" placeholder="Username" autocomplete="off">
+            <input type="password" id="loginPassword" placeholder="Password">
+            <button onclick="login()">Login</button>
+            <button onclick="showRegister()">Create Account</button>
+        </div>
+
+        <!-- Register Section -->
+        <div class="auth-container register">
+            <h2>Register</h2>
+            <p class="error" id="registerError"></p>
+            <input type="text" id="registerUsername" placeholder="Username" autocomplete="off">
+            <input type="password" id="registerPassword" placeholder="Password">
+            <button onclick="register()">Register</button>
+            <button onclick="showLogin()">Back to Login</button>
+        </div>
+
+        <!-- Chat Section -->
+        <div class="chat-container">
+            <div class="tab-bar">
+                <button class="tab-button active" onclick="showChat()">Chat</button>
+                <button class="tab-button" onclick="showProfile()">Profile</button>
+                <button class="tab-button" id="adminTab" style="display: none;" onclick="showAdmin()">Admin</button>
+            </div>
+            <div id="chatMessages"></div>
+            <div class="input-group">
+                <textarea id="messageInput" placeholder="Type a message..." rows="1"></textarea>
+                <input type="file" id="mediaInput" accept="image/*,video/*">
+                <button class="media-button" onclick="document.getElementById('mediaInput').click()">📎</button>
+            </div>
+            <div class="button-group">
+                <button onclick="sendMessage()">Send</button>
+                <button onclick="clearChat()">Clear My Chat</button>
+                <button onclick="logout()">Logout</button>
+            </div>
+        </div>
+
+        <!-- Profile Section -->
+        <div class="profile-container">
+            <div class="tab-bar">
+                <button class="tab-button" onclick="showChat()">Chat</button>
+                <button class="tab-button active" onclick="showProfile()">Profile</button>
+                <button class="tab-button" id="adminTabProfile" style="display: none;" onclick="showAdmin()">Admin</button>
+            </div>
+            <h2>Profile</h2>
+            <p class="error" id="profileError"></p>
+            <input type="text" id="displayName" placeholder="Display Name">
+            <div class="color-options">
+                <div class="color-option" style="background: #ff4d4d" data-color="#ff4d4d"></div>
+                <div class="color-option" style="background: #4d94ff" data-color="#4d94ff"></div>
+                <div class="color-option" style="background: #33cc33" data-color="#33cc33"></div>
+                <div class="color-option" style="background: #ffcc00" data-color="#ffcc00"></div>
+            </div>
+            <button onclick="saveProfile()">Save Profile</button>
+            <button onclick="showChat()">Back to Chat</button>
+        </div>
+
+        <!-- Admin Section -->
+        <div class="admin-container">
+            <div class="tab-bar">
+                <button class="tab-button" onclick="showChat()">Chat</button>
+                <button class="tab-button" onclick="showProfile()">Profile</button>
+                <button class="tab-button active" onclick="showAdmin()">Admin</button>
+            </div>
+            <h2>Admin Panel</h2>
+            <div class="user-list" id="userList"></div>
+            <div class="button-group">
+                <button onclick="adminClearAllChats()">Clear All Chats</button>
+                <button onclick="adminClearAllAccounts()">Clear All Accounts</button>
+                <button onclick="showChat()">Back to Chat</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        const ADMIN_USERNAME = 'admin';
+        const ADMIN_PASSWORD = 'admin';
+        const messages = [];
+        let profileColor = '#ff4d4d';
+
+        // Load users from localStorage
+        function loadUsers() {
+            return JSON.parse(localStorage.getItem('secureChatUsers') || '{}');
+        }
+
+        // Save users to localStorage
+        function saveUsers(users) {
+            localStorage.setItem('secureChatUsers', JSON.stringify(users));
+        }
+
+        // Show login section
+        function showLogin() {
+            document.querySelector('.login').classList.add('active');
+            document.querySelector('.register').classList.remove('active');
+            document.querySelector('.chat-container').classList.remove('active');
+            document.querySelector('.profile-container').classList.remove('active');
+            document.querySelector('.admin-container').classList.remove('active');
+            document.getElementById('loginUsername').focus();
+        }
+
+        // Show register section
+        function showRegister() {
+            document.querySelector('.register').classList.add('active');
+            document.querySelector('.login').classList.remove('active');
+            document.querySelector('.chat-container').classList.remove('active');
+            document.querySelector('.profile-container').classList.remove('active');
+            document.querySelector('.admin-container').classList.remove('active');
+            document.getElementById('registerUsername').focus();
+        }
+
+        // Show chat section
+        function showChat() {
+            document.querySelector('.chat-container').classList.add('active');
+            document.querySelector('.login').classList.remove('active');
+            document.querySelector('.register').classList.remove('active');
+            document.querySelector('.profile-container').classList.remove('active');
+            document.querySelector('.admin-container').classList.remove('active');
+            updateTabButtons('chat');
+            document.getElementById('messageInput').focus();
+            loadMessages();
+        }
+
+        // Show profile section
+        function showProfile() {
+            document.querySelector('.profile-container').classList.add('active');
+            document.querySelector('.chat-container').classList.remove('active');
+            document.querySelector('.login').classList.remove('active');
+            document.querySelector('.register').classList.remove('active');
+            document.querySelector('.admin-container').classList.remove('active');
+            updateTabButtons('profile');
+            loadProfile();
+        }
+
+        // Show admin section
+        function showAdmin() {
+            if (currentUser !== ADMIN_USERNAME) return;
+            document.querySelector('.admin-container').classList.add('active');
+            document.querySelector('.chat-container').classList.remove('active');
+            document.querySelector('.profile-container').classList.remove('active');
+            document.querySelector('.login').classList.remove('active');
+            document.querySelector('.register').classList.remove('active');
+            updateTabButtons('admin');
+            renderUserList();
+        }
+
+        // Update tab buttons
+        function updateTabButtons(activeTab) {
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+                if (button.textContent.toLowerCase() === activeTab) {
+                    button.classList.add('active');
+                }
+            });
+        }
+
+        // Register new user
+        function register() {
+            const username = document.getElementById('registerUsername').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const error = document.getElementById('registerError');
+
+            if (!username || !password) {
+                error.textContent = 'Please fill in all fields';
+                error.style.display = 'block';
+                return;
+            }
+
+            const users = loadUsers();
+            if (users[username]) {
+                error.textContent = 'Username already taken';
+                error.style.display = 'block';
+                return;
+            }
+
+            users[username] = {
+                password,
+                profile: { displayName: username, color: '#ff4d4d' }
+            };
+            saveUsers(users);
+            error.style.display = 'none';
+            showLogin();
+        }
+
+        // Login user
+        function login() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const error = document.getElementById('loginError');
+
+            const users = loadUsers();
+            if ((users[username] && users[username].password === password) || 
+                (username === ADMIN_USERNAME && password === ADMIN_PASSWORD)) {
+                currentUser = username;
+                document.getElementById('adminTab').style.display = username === ADMIN_USERNAME ? 'block' : 'none';
+                document.getElementById('adminTabProfile').style.display = username === ADMIN_USERNAME ? 'block' : 'none';
+                error.style.display = 'none';
+                showChat();
+            } else {
+                error.textContent = 'Invalid username or password';
+                error.style.display = 'block';
+            }
+        }
+
+        // Logout user
+        function logout() {
+            currentUser = null;
+            showLogin();
+        }
+
+        // Send message
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+
+            if (message) {
+                const users = loadUsers();
+                messages.push({
+                    username: currentUser,
+                    displayName: users[currentUser]?.profile?.displayName || currentUser,
+                    color: users[currentUser]?.profile?.color || '#ff4d4d',
+                    content: message,
+                    type: 'text',
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                });
+                input.value = '';
+                saveMessages();
+                renderMessages();
+            }
+        }
+
+        // Send media
+        function sendMedia() {
+            const input = document.getElementById('mediaInput');
+            if (input.files[0]) {
+                const file = input.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const users = loadUsers();
+                    messages.push({
+                        username: currentUser,
+                        displayName: users[currentUser]?.profile?.displayName || currentUser,
+                        color: users[currentUser]?.profile?.color || '#ff4d4d',
+                        content: e.target.result,
+                        type: file.type.startsWith('image') ? 'image' : 'video',
+                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    });
+                    saveMessages();
+                    renderMessages();
+                    input.value = '';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Save messages to localStorage
+        function saveMessages() {
+            localStorage.setItem('secureChatMessages', JSON.stringify(messages));
+        }
+
+        // Load messages from localStorage
+        function loadMessages() {
+            const savedMessages = JSON.parse(localStorage.getItem('secureChatMessages') || '[]');
+            messages.length = 0;
+            messages.push(...savedMessages);
+            renderMessages();
+        }
+
+        // Render messages
+        function renderMessages() {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML = '';
+            messages.forEach(msg => {
+                const div = document.createElement('div');
+                div.className = `message ${msg.username === ADMIN_USERNAME ? 'admin' : ''}`;
+                
+                const header = document.createElement('div');
+                header.className = `message-header ${msg.username === ADMIN_USERNAME ? 'admin' : ''}`;
+                header.style.color = msg.username === ADMIN_USERNAME ? '#ff9999' : msg.color;
+                header.innerHTML = `<span>${msg.displayName}</span><span>${msg.timestamp}</span>`;
+                div.appendChild(header);
+
+                if (msg.type === 'text') {
+                    div.appendChild(document.createTextNode(msg.content));
+                } else if (msg.type === 'image') {
+                    const img = document.createElement('img');
+                    img.src = msg.content;
+                    div.appendChild(img);
+                } else if (msg.type === 'video') {
+                    const video = document.createElement('video');
+                    video.src = msg.content;
+                    video.controls = true;
+                    div.appendChild(video);
+                }
+
+                chatMessages.appendChild(div);
+            });
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Clear user's chat
+        function clearChat() {
+            const userMessages = messages.filter(msg => msg.username !== currentUser);
+            messages.length = 0;
+            messages.push(...userMessages);
+            saveMessages();
+            renderMessages();
+        }
+
+        // Admin clear all chats
+        function adminClearAllChats() {
+            if (currentUser === ADMIN_USERNAME) {
+                messages.length = 0;
+                saveMessages();
+                renderMessages();
+            }
+        }
+
+        // Admin clear all accounts
+        function adminClearAllAccounts() {
+            if (currentUser === ADMIN_USERNAME) {
+                localStorage.removeItem('secureChatUsers');
+                localStorage.removeItem('secureChatMessages');
+                messages.length = 0;
+                renderMessages();
+                logout();
+            }
+        }
+
+        // Load profile
+        function loadProfile() {
+            const users = loadUsers();
+            const profile = users[currentUser]?.profile || { displayName: currentUser, color: '#ff4d4d' };
+            document.getElementById('displayName').value = profile.displayName;
+            profileColor = profile.color;
+
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.classList.remove('selected');
+                if (option.dataset.color === profile.color) {
+                    option.classList.add('selected');
+                }
+                option.onclick = () => {
+                    document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                    profileColor = option.dataset.color;
+                };
+            });
+        }
+
+        // Save profile
+        function saveProfile() {
+            const displayName = document.getElementById('displayName').value.trim();
+            const error = document.getElementById('profileError');
+
+            if (!displayName) {
+                error.textContent = 'Display name cannot be empty';
+                error.style.display = 'block';
+                return;
+            }
+
+            const users = loadUsers();
+            if (!users[currentUser]) {
+                users[currentUser] = { password: '', profile: {} };
+            }
+            users[currentUser].profile = { displayName, color: profileColor };
+            saveUsers(users);
+            error.style.display = 'none';
+            showChat();
+        }
+
+        // Render user list for admin
+        function renderUserList() {
+            const userList = document.getElementById('userList');
+            userList.innerHTML = '';
+            const users = loadUsers();
+            Object.keys(users).forEach(username => {
+                const div = document.createElement('div');
+                div.className = 'user-item';
+                div.textContent = username;
+                userList.appendChild(div);
+            });
+        }
+
+        // Auto-resize textarea
+        document.getElementById('messageInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = `${this.scrollHeight}px`;
+        });
+
+        // Trigger media input
+        document.getElementById('mediaInput').addEventListener('change', sendMedia);
+
+        // Handle Enter key for sending messages
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
